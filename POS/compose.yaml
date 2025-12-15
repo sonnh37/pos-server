@@ -1,0 +1,7 @@
+﻿services:
+  pos.api:
+    image: pos.api
+    build:
+      context: .
+      dockerfile: POS.API/Dockerfile
+
