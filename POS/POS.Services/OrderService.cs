@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Collections;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using POS.Domain.Contracts.Repositories;
 using POS.Domain.Contracts.Services;
@@ -39,16 +40,44 @@ public class OrderService : BaseService, IOrderService
 
     public async Task<BusinessResult> Create(OrderCreateCommand createCommand)
     {
-        var entity = _mapper.Map<Order>(createCommand);
-        if (entity == null) throw new NotFoundException(Const.NOT_FOUND_MSG);
-        entity.CreatedDate = DateTimeOffset.UtcNow;
-        _orderRepository.Add(entity);
-        
+        var orderItems = new List<OrderItem>();
+
+        foreach (var item in createCommand.Items)
+        {
+            var product = await _unitOfWork.ProductRepository.GetQueryable(m => m.Id == item.ProductId)
+                .SingleOrDefaultAsync();
+            if (product == null)
+                throw new NotFoundException("Not found product: " + item.ProductId);
+            var orderItem = new OrderItem
+            {
+                ProductId = item.ProductId,
+                Quantity = item.Quantity,
+                UnitPrice = product.Price,
+                TotalAmount = product.Price * item.Quantity,
+                CreatedDate = DateTimeOffset.UtcNow
+            };
+            orderItems.Add(orderItem);
+        }
+
+        var totalAmount = orderItems.Sum(o => o.TotalAmount);
+
+        var order = new Order
+        {
+            OrderNumber = CommonHelper.GenerateId(),
+            Status = OrderStatus.Pending,
+            OrderDate =  DateTimeOffset.UtcNow,
+            TotalAmount = totalAmount,
+            OrderItems = orderItems
+        };
+        if (order == null) throw new NotFoundException(Const.NOT_FOUND_MSG);
+        order.CreatedDate = DateTimeOffset.UtcNow;
+        _orderRepository.Add(order);
+
         var saveChanges = await _unitOfWork.SaveChanges();
         if (!saveChanges)
             throw new Exception();
 
-        var result = _mapper.Map<OrderResult>(entity);
+        var result = _mapper.Map<OrderResult>(order);
 
         return new BusinessResult(result);
     }
@@ -62,7 +91,7 @@ public class OrderService : BaseService, IOrderService
 
         _mapper.Map(updateCommand, entity);
         _orderRepository.Update(entity);
-        
+
         var saveChanges = await _unitOfWork.SaveChanges();
         if (!saveChanges)
             throw new Exception();
@@ -71,7 +100,7 @@ public class OrderService : BaseService, IOrderService
 
         return new BusinessResult(result);
     }
-    
+
     public async Task<BusinessResult> GetById(OrderGetByIdQuery request)
     {
         var queryable = _orderRepository.GetQueryable(x => x.Id == request.Id);
