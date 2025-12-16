@@ -6,9 +6,10 @@ namespace POS.Domain.Entities;
 
 public enum ProductStatus
 {
-    Active,
-    Draft,
-    Archived
+    Available,
+    OutOfStock,
+    Discontinued,
+    ComingSoon
 }
 
 public class Product : BaseEntity

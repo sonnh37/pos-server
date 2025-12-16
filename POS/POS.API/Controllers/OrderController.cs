@@ -33,6 +33,7 @@ public class OrderController : BaseController
         return Ok(businessResult);
     }
 
+    [AllowAnonymous]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] OrderCreateCommand request)
     {

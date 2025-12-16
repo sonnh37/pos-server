@@ -34,6 +34,7 @@ public class ProductController : BaseController
         return Ok(businessResult);
     }
 
+    [AllowAnonymous]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] ProductCreateCommand request)
     {

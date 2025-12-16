@@ -31,6 +31,16 @@ public class ProductService : BaseService, IProductService
     {
         var queryable = _productRepository.GetQueryable();
 
+        if (query.Status != null)
+        {
+            queryable = queryable.Where(x => x.Status == query.Status);
+        }
+
+        if (query.Name != null)
+        {
+            queryable = queryable.Where(x => x.Name != null && x.Name.ToLower().Contains(query.Name.ToLower()));
+        }
+
         queryable = queryable.Include(query.IncludeProperties);
         queryable = queryable.Sort(query.Sorting);
 

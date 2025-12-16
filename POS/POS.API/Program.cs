@@ -1,8 +1,10 @@
 using System.Text.Json.Serialization;
 using DotNetEnv;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc.ApplicationModels;
 using POS.API.Extensions;
 using POS.Domain.Configs;
+using POS.Domain.Configs.Slugify;
 using POS.Domain.Shared.Handler;
 using POS.Domain.Utilities;
 
@@ -19,6 +21,12 @@ builder.Host.AddSerilog(builder.Configuration);
 // Exception handler
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
+builder.Services.AddControllersWithViews(options =>
+{
+    options.Conventions.Add(
+        new RouteTokenTransformerConvention(new SlugifyParameterTransformer())
+    );
+});
 builder.Services.ConfigureContext(builder.Configuration);
 
 builder.Services.AddControllers().AddJsonOptions(options =>
@@ -55,6 +63,8 @@ app.Lifetime.ApplicationStarted.Register(() =>
 {
     logger.LogInformation("[Successfully] Server started successfully and is listening for requests...");
 });
+
+app.SeedDatabase();
 
 if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
