@@ -32,14 +32,6 @@ public class OrderController : BaseController
     }
 
     [AllowAnonymous]
-    [HttpGet("id")]
-    public async Task<IActionResult> GetById([FromQuery] OrderGetByIdQuery request)
-    {
-        var businessResult = await _orderService.GetById(request);
-        return Ok(businessResult);
-    }
-
-    [AllowAnonymous]
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] OrderCreateCommand request)
     {
@@ -52,36 +44,4 @@ public class OrderController : BaseController
 
         return Ok(businessResult);
     }
-    
-    [HttpPost("test")]
-    public async Task<IActionResult> CreateTestOrder()
-    {
-        var testOrder = new Order
-        {
-            OrderNumber = $"ORD-TEST-{DateTime.Now:HHmmss}",
-            TotalAmount = new Random().Next(50000, 500000),
-            OrderDate = DateTime.UtcNow
-        };
-
-        
-        await _hubContext.Clients.All.SendAsync("ReceiveNewOrder", testOrder);
-
-        return Ok(new { message = "Test order created", order = testOrder });
-    }
-
-    // [HttpPut]
-    // public async Task<IActionResult> Update([FromBody] OrderUpdateCommand request)
-    // {
-    //     var businessResult = await _orderService.Update(request);
-    //
-    //     return Ok(businessResult);
-    // }
-    //
-    // [HttpDelete]
-    // public async Task<IActionResult> Delete([FromQuery] OrderDeleteCommand request)
-    // {
-    //     var businessResult = await  _orderService.Delete(request);
-    //
-    //     return Ok(businessResult);
-    // }
 }
