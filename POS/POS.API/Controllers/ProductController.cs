@@ -25,37 +25,4 @@ public class ProductController : BaseController
 
         return Ok(businessResult);
     }
-
-    [AllowAnonymous]
-    [HttpGet("id")]
-    public async Task<IActionResult> GetById([FromQuery] ProductGetByIdQuery request)
-    {
-        var businessResult = await _productService.GetById(request);
-        return Ok(businessResult);
-    }
-
-    [AllowAnonymous]
-    [HttpPost]
-    public async Task<IActionResult> Create([FromBody] ProductCreateCommand request)
-    {
-        var businessResult = await _productService.Create(request);
-
-        return Ok(businessResult);
-    }
-
-    // [HttpPut]
-    // public async Task<IActionResult> Update([FromBody] ProductUpdateCommand request)
-    // {
-    //     var businessResult = await _productService.Update(request);
-    //
-    //     return Ok(businessResult);
-    // }
-    //
-    // [HttpDelete]
-    // public async Task<IActionResult> Delete([FromQuery] ProductDeleteCommand request)
-    // {
-    //     var businessResult = await  _productService.Delete(request);
-    //
-    //     return Ok(businessResult);
-    // }
 }
