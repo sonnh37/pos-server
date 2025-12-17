@@ -1,7 +1,7 @@
 # Quick Start
 
 ### System Required
-- Node.js 18.x+
+- NET 8
 
 ### Clone repository
 git clone <repo-url>
