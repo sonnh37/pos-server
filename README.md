@@ -1,7 +1,7 @@
 # Quick Start
 
 ### System Required
-- NET 8
+- .NET 8
 
 ### Clone repository
 git clone <repo-url>
