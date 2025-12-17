@@ -31,6 +31,16 @@ public class ProductService : BaseService, IProductService
     {
         var queryable = _productRepository.GetQueryable();
 
+        if (query.Status != null)
+        {
+            queryable = queryable.Where(x => x.Status == query.Status);
+        }
+
+        if (query.Name != null)
+        {
+            queryable = queryable.Where(x => x.Name != null && x.Name.ToLower().Contains(query.Name.ToLower()));
+        }
+
         queryable = queryable.Include(query.IncludeProperties);
         queryable = queryable.Sort(query.Sorting);
 
@@ -41,14 +51,40 @@ public class ProductService : BaseService, IProductService
         return new BusinessResult(pagedList);
     }
 
-    public Task<BusinessResult> Create(ProductCreateCommand createCommand)
+
+    public async Task<BusinessResult> Create(ProductCreateCommand createCommand)
     {
-        throw new NotImplementedException();
+        var entity = _mapper.Map<Product>(createCommand);
+        if (entity == null) throw new NotFoundException(Const.NOT_FOUND_MSG);
+        entity.CreatedDate = DateTimeOffset.UtcNow;
+        _productRepository.Add(entity);
+
+        var saveChanges = await _unitOfWork.SaveChanges();
+        if (!saveChanges)
+            throw new Exception();
+
+        var result = _mapper.Map<ProductResult>(entity);
+
+        return new BusinessResult(result);
     }
 
-    public Task<BusinessResult> Update(ProductUpdateCommand updateCommand)
+    public async Task<BusinessResult> Update(ProductUpdateCommand updateCommand)
     {
-        throw new NotImplementedException();
+        var entity = await _productRepository.GetQueryable(m => m.Id == updateCommand.Id).SingleOrDefaultAsync();
+
+        if (entity == null)
+            throw new NotFoundException(Const.NOT_FOUND_MSG);
+
+        _mapper.Map(updateCommand, entity);
+        _productRepository.Update(entity);
+
+        var saveChanges = await _unitOfWork.SaveChanges();
+        if (!saveChanges)
+            throw new Exception();
+
+        var result = _mapper.Map<ProductResult>(entity);
+
+        return new BusinessResult(result);
     }
 
     public async Task<BusinessResult> GetById(ProductGetByIdQuery request)

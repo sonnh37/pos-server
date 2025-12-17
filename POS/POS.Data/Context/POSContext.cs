@@ -13,6 +13,7 @@ public partial class POSContext : BaseDbContext
 
     public virtual DbSet<Product> Products { get; set; }
     public virtual DbSet<Order> Orders { get; set; }
+    public virtual DbSet<OrderItem> OrderItems { get; set; }
 
     // Auto Enum Convert Int To String
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)

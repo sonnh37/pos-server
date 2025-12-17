@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Collections;
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using POS.Domain.Contracts.Repositories;
 using POS.Domain.Contracts.Services;
@@ -37,37 +38,59 @@ public class OrderService : BaseService, IOrderService
         return new BusinessResult(pagedList);
     }
 
-    public Task<BusinessResult> Create(OrderCreateCommand createCommand)
+    public async Task<BusinessResult> Create(OrderCreateCommand createCommand)
     {
-        throw new NotImplementedException();
+        var orderItems = new List<OrderItem>();
+
+        foreach (var item in createCommand.Items)
+        {
+            var product = await _unitOfWork.ProductRepository.GetQueryable(m => m.Id == item.ProductId)
+                .SingleOrDefaultAsync();
+            if (product == null)
+                throw new NotFoundException("Not found product: " + item.ProductId);
+            var orderItem = new OrderItem
+            {
+                ProductId = item.ProductId,
+                Quantity = item.Quantity,
+                UnitPrice = product.Price,
+                TotalAmount = product.Price * item.Quantity,
+                CreatedDate = DateTimeOffset.UtcNow
+            };
+            orderItems.Add(orderItem);
+        }
+
+        var totalAmount = orderItems.Sum(o => o.TotalAmount);
+
+        var order = new Order
+        {
+            OrderNumber = CommonHelper.GenerateId(),
+            Status = OrderStatus.Pending,
+            OrderDate =  DateTimeOffset.UtcNow,
+            TotalAmount = totalAmount,
+            OrderItems = orderItems
+        };
+        if (order == null) throw new NotFoundException(Const.NOT_FOUND_MSG);
+        order.CreatedDate = DateTimeOffset.UtcNow;
+        _orderRepository.Add(order);
+
+        var saveChanges = await _unitOfWork.SaveChanges();
+        if (!saveChanges)
+            throw new Exception();
+
+        var result = _mapper.Map<OrderResult>(order);
+
+        return new BusinessResult(result);
     }
 
-    public Task<BusinessResult> Update(OrderUpdateCommand updateCommand)
+    public async Task<BusinessResult> Update(OrderUpdateCommand updateCommand)
     {
-        throw new NotImplementedException();
-    }
+        var entity = await _orderRepository.GetQueryable(m => m.Id == updateCommand.Id).SingleOrDefaultAsync();
 
+        if (entity == null)
+            throw new NotFoundException(Const.NOT_FOUND_MSG);
 
-    public async Task<BusinessResult> CreateOrUpdate(CreateOrUpdateCommand createOrUpdateCommand)
-    {
-        Order? entity = null;
-        if (createOrUpdateCommand is OrderUpdateCommand updateCommand)
-        {
-            entity = await _orderRepository.GetQueryable(m => m.Id == updateCommand.Id).SingleOrDefaultAsync();
-
-            if (entity == null)
-                throw new NotFoundException(Const.NOT_FOUND_MSG);
-
-            _mapper.Map(updateCommand, entity);
-            _orderRepository.Update(entity);
-        }
-        else if (createOrUpdateCommand is OrderCreateCommand createCommand)
-        {
-            entity = _mapper.Map<Order>(createCommand);
-            if (entity == null) throw new NotFoundException(Const.NOT_FOUND_MSG);
-            entity.CreatedDate = DateTimeOffset.UtcNow;
-            _orderRepository.Add(entity);
-        }
+        _mapper.Map(updateCommand, entity);
+        _orderRepository.Update(entity);
 
         var saveChanges = await _unitOfWork.SaveChanges();
         if (!saveChanges)
